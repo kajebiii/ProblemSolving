@@ -1,0 +1,1 @@
+var a,b:Byte;begin Read(a,b);Write(a+b)end.
