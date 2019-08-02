@@ -1,20 +1,5 @@
 //BOJ 7469
 
-#include <bits/stdc++.h>
-
-using namespace std;
-
-#define REP(i,n) for(int (i)=0;(i)<(int)(n);(i)++)
-#define REPO(i,n) for(int (i)=1; (i)<=(int)(n); (i)++)
-#define SZ(v) ((int)(v).size())
-#define ALL(v) (v).begin(),(v).end()
-#define one first
-#define two second
-typedef long long ll;
-typedef pair<int, int> pi;
-const int INF = 0x3f2f1f0f;
-const ll LINF = 1ll * INF * INF;
-
 struct NODE {
 	int l, r, cnt;
 	NODE *lp, *rp;

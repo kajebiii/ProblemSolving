@@ -11,36 +11,51 @@ using pi = pair<int, int>;
 const int INF = 0x3f3f3f3f;
 const ll LINF = 1ll * INF * INF;
 
+using tl = tuple<ll, ll, ll>;
+
+const int MAX_N = 3e5 + 100;
+
+struct NODE {
+	NODE *l, *r, *p;
+	int val, cnt, minV, maxV; ll sum;
+	bool inv;
+	NODE(int v_) : l(NULL), r(NULL), p(NULL), val(v_), cnt(1), minV(v_), maxV(v_), sum(1ll*v_), inv(false) {}
+}*root;
+
+NODE* memo[MAX_N];
 struct SLT {
-	struct NODE {
-		NODE *l, *r, *p;
-		int val, cnt; ll sum, lazy;
-		NODE(int v_) : l(NULL), r(NULL), p(NULL), val(v_), cnt(1), sum(1ll*v_), lazy(0ll) {}
-	}*root;
 	static const int DUMMY = 1;
 
 	void update(NODE *x) {
-		x->cnt = 1; x->sum = x->val;
-		if(x->l) x->cnt += x->l->cnt;
-		if(x->r) x->cnt += x->r->cnt;
-		if(x->l) x->sum += x->l->sum;
-		if(x->r) x->sum += x->r->sum;
-	}
-	void lazyUpdate(NODE *x) {
-		x->val += x->lazy;
+		x->cnt = 1; x->sum = x->minV = x->maxV = x->val;
 		if(x->l) {
-			x->l->lazy += x->lazy;
-			x->l->sum += x->lazy * x->l->cnt;
+			x->cnt += x->l->cnt;
+			x->sum += x->l->sum;
+			x->minV = min(x->minV, x->l->minV);
+			x->maxV = max(x->maxV, x->l->maxV);
 		}
 		if(x->r) {
-			x->r->lazy += x->lazy;
-			x->r->sum += x->lazy * x->r->cnt;
+			x->cnt += x->r->cnt;
+			x->sum += x->r->sum;
+			x->minV = min(x->minV, x->r->minV);
+			x->maxV = max(x->maxV, x->r->maxV);
 		}
-		x->lazy = 0;
+	}
+	void lazyUpdate(NODE *x) {
+		if(!(x->inv)) return;
+		NODE *t = x->l;
+		x->l = x->r;
+		x->r = t;
+		x->inv = false;
+		if(x->l) x->l->inv = !(x->l->inv);
+		if(x->r) x->r->inv = !(x->r->inv);
 	}
 	void rotate(NODE *x) {
 		assert(x != root);
+		//if(x == root) while(1);
 		NODE *p = x->p, *b;
+		lazyUpdate(p);
+		lazyUpdate(x);
 		if(x == p->l)
 			p->l = b = x->r, x->r = p;
 		else
@@ -58,8 +73,9 @@ struct SLT {
 			rotate(x);
 		}
 	}
-	void insert(int val) {
+	void insert(int val, bool isMemo = false) {
 		NODE *p = root, **pp, *x = new NODE(val);
+		if(isMemo) memo[val] = x;
 		if(!p) { root = x; return; }
 		while(true) {
 			//		if(val == p->val) return; //if not multi-set
@@ -123,38 +139,69 @@ struct SLT {
 		root->sum -= root->val;
 		root->sum += (root->val = k);
 	}
-	void add(int l, int r, int k) {
+	void inverse(int l, int r) {
 		interval(l, r);
 		NODE *x = root->r->l;
-		x->sum += 1ll * x->cnt * k;
-		x->lazy += k;
+		x->inv = !(x->inv);
+	}
+	tl getQuery(int l, int r) {
+		interval(l, r);
+		NODE *n = root->r->l;
+		return tl(n->minV, n->maxV, n->sum);
 	}
 	ll getSum(int l, int r) {
 		interval(l, r);
-		return root->r->l->sum;
+		NODE *n = root->r->l;
+		return n->sum;
 	}
-	SLT(int n) : root(NULL) {
+	int getWhere(int x) {
+		splay(memo[x]);
+		return root->l->cnt;
+	}
+	SLT(int n) {
 		NODE *x;
-		for(int i=0; i<n+DUMMY*2; i++) insert(0);
+		for(int i=0; i<DUMMY; i++) insert(0);
+		for(int i=0; i<n; i++) insert(i+1, true);
+		for(int i=0; i<DUMMY; i++) insert(INF);
 	}
 };
-int N, M, K;
+int N, Q;
 int main() {
-	cin >> N >> M >> K;
+	cin >> N >> Q;
 	SLT slt = SLT(N);
-	for(int i=0, x; i<N; i++) {
-		scanf("%d", &x);
-		slt.add(i, i, x);
-	}
-	for(int i=0; i<M+K; i++) {
-		int t, x, y; scanf("%d%d%d", &t, &x, &y);
+	while(Q--) {
+		int t; scanf("%d", &t);
 		if(t == 1) {
-			int k; scanf("%d", &k);
-			slt.add(x-1, y-1, k);
-		}else{
-			printf("%lld\n", slt.getSum(x-1, y-1));
+			int l, r; scanf("%d%d", &l, &r); l--; r--;
+			ll minv, maxv, sum; tie(minv, maxv, sum) = slt.getQuery(l, r);
+			printf("%lld %lld %lld\n", minv, maxv, sum);
+			slt.inverse(l, r);
+		}else if(t == 2) {
+			int l, r, x; scanf("%d%d%d", &l, &r, &x); l--; r--;
+			ll minv, maxv, sum; tie(minv, maxv, sum) = slt.getQuery(l, r);
+			printf("%lld %lld %lld\n", minv, maxv, sum);
+			x = x % (r-l+1);
+			if(x < 0) x = (r-l+1) - abs(x);
+			if(x == 0) continue;
+			//printf(">> %d %d %d\n", l, r, x);
+			slt.inverse(l, r-x);
+			slt.inverse(r-x+1, r);
+			slt.inverse(l, r);
+		}else if(t == 3) {
+			int x; scanf("%d", &x); x--;
+			ll minv, maxv, sum; tie(minv, maxv, sum) = slt.getQuery(x, x);
+			printf("%lld\n", sum);
+		}else if(t == 4) {
+			int x; scanf("%d", &x);
+			printf("%lld\n", slt.getWhere(x));
 		}
 	}
+	for(int i=0; i<N; i++) {
+		int x=i;
+		ll minv, maxv, sum; tie(minv, maxv, sum) = slt.getQuery(x, x);
+		printf("%lld ", sum);
+	}
+	puts("");
 	return 0;
 }
 

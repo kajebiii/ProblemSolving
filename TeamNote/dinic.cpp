@@ -1,51 +1,46 @@
 
+const int MAX_N = 4e2 + 50;
 
-int S, E, l[700], si[700], Q[700];
-struct ed
-{
-	int t, w, r;
-	ed(int T, int W, int R) :t(T), w(W), r(R) {}
+struct ED{
+	int to, fl, re;
+	ED(int t, int f, int r) : to(t), fl(f), re(r) {}
 };
-vector<ed> Mp[700];
-void added(int f, int t, int w) {
-	Mp[f].push_back(ed(t, w, Mp[t].size()));
-	Mp[t].push_back(ed(f, 0, Mp[f].size()-1));
+vector<ED> Ed[MAX_N];
+void add(int fr, int to, int fl) {
+	Ed[fr].emplace_back(to, fl, SZ(Ed[to]));
+	Ed[to].emplace_back(fr,  0, SZ(Ed[fr])-1);
 }
-bool bfs()
-{
-	for(int i=0; i<=E; i++) l[i] = 0;
-	int f=-1, r=-1;
-	Q[++r]=S; l[S] = 1;
-	while(f<r) {
-		int x = Q[++f];
-		for(auto &e: Mp[x])
-			if(e.w != 0 && l[e.t] == 0) {
-				Q[++r]=e.t; l[e.t] = l[x]+1;
-				if(e.t == E) return true;
+
+int St, En, Lv[MAX_N], Ix[MAX_N];
+bool bfs() {
+	for(int i=St; i<=En; i++) Lv[i] = INF;
+	queue<int> Q; Q.emplace(St); Lv[St] = 0;
+	while(!Q.empty()) {
+		int v = Q.front(); Q.pop();
+		for(ED &val : Ed[v]) {
+			int w = val.to, f = val.fl, r = val.re;
+			if(f > 0 && Lv[w] == INF) {
+				Lv[w] = Lv[v] + 1;
+				Q.emplace(w);
 			}
-	}
-	return false;
-}
-int dfs(int x, int f) {
-	if(x==E) return f;
-	for(int &i=si[x], m; i<Mp[x].size(); i++) {
-		auto &e=Mp[x][i];
-		if(l[e.t]>l[x] && e.w!=0 && (m = dfs(e.t, min(f, e.w))) > 0) {
-			e.w -= m;
-			Mp[e.t][e.r].w += m;
-			return m;
 		}
 	}
-	return 0;
+	return Lv[En] != INF;
 }
-int main() {
-	//input
-	int flow = 0;
-	while(true) {
-		if(!bfs()) break;
-		int f;
-		for(int i=0; i<=E; i++) si[i] = 0;
-		while((f=dfs(S, 10000000)) != 0) flow += f;
+void initDfs() {
+	for(int i=St; i<=En; i++) Ix[i] = 0;
+}
+int dfs(int v, int mf) {
+	if(v == En) return mf;
+	for(int &i = Ix[v]; i < SZ(Ed[v]); i++) {
+		ED &val = Ed[v][i];
+		int w = val.to, f = val.fl, r = val.re;
+		int nf;
+		if(Lv[w] == Lv[v] + 1 && f > 0 && (nf = dfs(w, min(f, mf))) > 0) {
+			val.fl -= nf;
+			Ed[w][r].fl += nf;
+			return nf;
+		}
 	}
 	return 0;
 }

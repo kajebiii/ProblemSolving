@@ -47,3 +47,22 @@ for(int i=1;i<=|S|;i++) {
 		k = F[k];
 	}
 }
+
+//0-base
+int k = -1;
+F[0] = -1;
+for(int i=1;i<N;i++) {
+	while(k>=0 && P[k+1] != P[i]) k = F[k];
+	if(P[k+1] == P[i]) k++;
+	F[i] = k;
+}
+k = -1;
+for(int i=0;i<M;i++) {
+	while(k>=0 && P[k+1] != S[i]) k = F[k];
+	if(P[k+1] == S[i]) k++;
+	if(k == N-1) {
+		// MATCHED WITH S[i-|P|+1  i]!!
+		k = F[k];
+	}
+}
+

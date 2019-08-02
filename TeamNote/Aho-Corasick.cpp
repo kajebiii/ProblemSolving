@@ -9,25 +9,13 @@ struct NODE {
 	NODE () : is_end(0), count(0), f(0), o(0) { for(int i=0;i<26;i++) nxt[i] = 0; }
 	bool is_end; int count;
 	NODE *nxt[26], *f, *o;
-	// f = 실패 링크  o = 출력 링크
 } *root;
 NODE *my_end_node[MAXM];
 
-/*
-void dfs(NODE *now)
-{
-for(int i=0;i<26;i++) if(now->nxt[i]) dfs(now->nxt[i]);
-if(now->is_end && now->f->o)
-{
-now->f->o->count += now->count;
-}
-}
-*/
 
 int main()
 {
 	scanf("%s%d", S+1, &M); N = strlen(S+1);
-	// 입력과 동시에 Trie 구성
 	root = new NODE();
 	for(int i=1;i<=M;i++) {
 		scanf("%s", buf+1); int n = strlen(buf+1);
@@ -40,7 +28,6 @@ int main()
 		now->is_end = 1;
 		my_end_node[i] = now;
 	}
-	// BFS를 통해 실패 링크와 출력 링크를 계산
 	queue <NODE*> que;
 	for(int i=0;i<26;i++) if(root->nxt[i]) {
 		root->nxt[i]->f = root;
@@ -58,19 +45,16 @@ int main()
 			que.push(t);
 		}
 	}
-	// 문자열 S에서 패턴 검색
 	NODE *now = root;
 	for(int i=1;i<=N;i++) {
 		int c = S[i] - 'a';
 		while(now != root && !now->nxt[c]) now = now->f;
 		if(now->nxt[c]) now = now->nxt[c];
 		if(now->o) {
-			// 패턴 발견!
 			now->o->count++;
 		}
 	}
 
-	// 패턴 등장 회수 누적 계산 (BFS 역순으로) //어제복붙한거임
 	vector <NODE*> order;
 	que.push(root);
 	while(!que.empty()) {
